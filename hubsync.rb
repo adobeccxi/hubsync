@@ -21,6 +21,7 @@ require 'octokit'
 require 'git'
 require 'fileutils'
 require 'timeout'
+require 'optparse'
 
 module Git
   class Lib
@@ -84,14 +85,15 @@ end
 
 def init_github_clients(dotcom_token, enterprise_token, enterprise_url)
   clients = {}
-  clients[:githubcom] = Octokit::Client.new(access_token: dotcom_token, auto_paginate: true)
+  #clients[:githubcom] = Octokit::Client.new()
+  clients[:githubcom] = Octokit::Client.new(access_token: dotcom_token)
 
   Octokit.configure do |c|
     c.api_endpoint = "#{enterprise_url}/api/v3"
     c.web_endpoint = enterprise_url.to_s
   end
 
-  clients[:enterprise] = Octokit::Client.new(access_token: enterprise_token, auto_paginate: true)
+  clients[:enterprise] = Octokit::Client.new(access_token: enterprise_token)
   clients
 end
 
@@ -178,13 +180,26 @@ def sync(clients, dotcom_organization, enterprise_organization, repo_name, cache
 end
 
 if $PROGRAM_NAME == __FILE__
-  dotcom_organization = ARGV[0]
-  dotcom_token = ARGV[1]
-  enterprise_url = ARGV[2]
-  enterprise_organization = ARGV[3]
-  enterprise_token = ARGV[4]
-  cache_path = ARGV[5]
-  repo_name = ARGV[6]
+  options = {}
+  opt = OptionParser.new
+  opt.banner = "Usage: hubsync.rb [options]"
+  opt.on("-o", "--github-organization ORGANIZATION", "GitHub organization") { |v| options[:github_organization] = v }
+  opt.on("-t", "--github-token TOKEN", "GitHub personal access token") { |v| options[:github_token] = v }
+  opt.on("-u", "--github-enterprise-url URL", "GitHub enterprise URL") { |v| options[:github_enterprise_url] = v }
+  opt.on("-e", "--github-enterprise-organization ENTERPRISE_ORGANIZATION", "GitHub enterprise organization") { |v| options[:github_enterprise_organization] = v }
+  opt.on("-k", "--github-enterprise-token ENTERPRISE_TOKEN", "GitHub enterprise access token") { |v| options[:github_enterprise_token] = v }
+  opt.on("-r", "--repository-name REPOSITORY_NAME", "Repository name") { |v| options[:repository_name] = v }
+  opt.on("-c", "--cache-path CACHE_PATH", "Cache path") { |v| options[:cache_path] = v }
+
+  opt.parse!
+
+  dotcom_organization = options[:github_organization]
+  dotcom_token = options[:github_token]
+  enterprise_url = options[:github_enterprise_url]
+  enterprise_organization = options[:github_enterprise_organization]
+  enterprise_token = options[:github_enterprise_token]
+  cache_path = options[:cache_path]
+  repo_name = options[:repository_name]
 
   clients = init_github_clients(dotcom_token, enterprise_token, enterprise_url)
   sync(clients, dotcom_organization, enterprise_organization, repo_name, cache_path)

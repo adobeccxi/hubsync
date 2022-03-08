@@ -1,0 +1,2 @@
+$env:PROJECT="hubsync"
+$env:PATH="C:\tools\ruby27\bin;"+$env:PATH
